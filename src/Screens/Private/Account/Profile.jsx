@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,11 +13,14 @@ import {COLOR} from '../../../Constants/Colors';
 import Header from '../../../Components/FeedHeader';
 import CustomButton from '../../../Components/CustomButton';
 import FONT from '../../../Constants/Font';
+import { AuthContext } from '../../../Backend/AuthContent';
 
 const Profile = ({navigation}) => {
   const handlePress = action => {
     Alert.alert(action, `${action} clicked!`);
   };
+  const auth = useContext(AuthContext);
+  const {user} = auth;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -34,8 +37,8 @@ const Profile = ({navigation}) => {
             style={styles.profileImage}
           />
           <View style={styles.profileInfo}>
-            <Text style={styles.userName}>John Doe</Text>
-            <Text style={styles.userEmail}>johndoe@gmail.com</Text>
+            <Text style={styles.userName}>{user?.name}</Text>
+            <Text style={styles.userEmail}>{user?.email}</Text>
           </View>
           <TouchableOpacity
             onPress={() => navigation.navigate('CreateProfile')}>

@@ -3,7 +3,7 @@ import { useContext } from 'react';
 import { AuthContext } from './AuthContent';
 import { useToast } from '../Constants/ToastContext';
 
-const BASE_URL = 'https://hotpink-rook-901841.hostingersite.com/';
+const BASE_URL = 'http://62.72.12.87:3000/';
 
 
 export const IMAGEURL = 'http://82.112.236.195:3000/uploads/profiles/'
@@ -28,7 +28,6 @@ export const useApi = () => {
       });
 
       const json = await response.json();
-
       if (!response.ok) {
         let errorMessages = 'An unknown error occurred.';
 
@@ -39,8 +38,6 @@ export const useApi = () => {
         } else if (json.msg) {
           errorMessages = json.msg;
         }
-
-        showToast(errorMessages, 'error');
 
 
         return {

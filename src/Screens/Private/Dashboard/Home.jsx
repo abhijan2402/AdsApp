@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {use, useContext, useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,10 +11,11 @@ import Header from '../../../Components/FeedHeader';
 import FONT from '../../../Constants/Font';
 import {COLOR} from '../../../Constants/Colors';
 import {windowWidth} from '../../../Constants/Dimensions';
+import { AuthContext } from '../../../Backend/AuthContent';
 
 const Home = () => {
   // Dummy Data
-  const [userName] = useState('John Doe');
+  // const [userName] = useState('John Doe');
   const [totalPoints] = useState(3250);
   const [conversionRate] = useState(0.1); // 1 point = 0.10 INR
   const [withdrawHistory] = useState([
@@ -35,6 +36,8 @@ const Home = () => {
       claimed: false,
     },
   ]);
+  const auth = useContext(AuthContext);
+  const {user} = auth;
 
   const totalMoney = (totalPoints * conversionRate).toFixed(2);
 
@@ -70,7 +73,7 @@ const Home = () => {
         {/* ---------- User Name ---------- */}
         <View style={styles.userInfoSection}>
           <Text style={styles.welcomeText}>Welcome, </Text>
-          <Text style={styles.userName}>{userName}</Text>
+          <Text style={styles.userName}>{user?.name}</Text>
         </View>
 
         {/* ---------- Tasks Section ---------- */}
