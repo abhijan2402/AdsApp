@@ -21,7 +21,12 @@ const MainNavigation = () => {
   }
 
   const {user, loading} = auth;
-  const [locationStatus, setLocationStatus] = useState('Checking location...');
+
+  const [manageLogin, setManageLogin] = useState(user?true:false)
+
+  useEffect(()=>{
+    setManageLogin(user?true:false)
+  },[user])
 
   if (loading) {
     return (
@@ -33,7 +38,7 @@ const MainNavigation = () => {
 
   return (
     <View style={{flex: 1}}>
-      <ToastProvider>{user ? <RootNavigation /> : <AuthStack />}</ToastProvider>
+      <ToastProvider>{manageLogin ? <RootNavigation /> : <AuthStack />}</ToastProvider>
     </View>
   );
 };

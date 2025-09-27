@@ -47,9 +47,12 @@ const Login = ({navigation}) => {
       const response = await postRequest(api_routes.login,body);
       if(!response.success)
         throw response;
-      setUser(response?.data?.response?.user) 
       setToken(response?.data?.response?.token)
-      // navigation.navigate('SignUp')
+      if(response?.data?.response?.user?.isRegistered === 1){
+        setUser(response?.data?.response?.user) 
+      }else{
+        navigation.navigate('CreateProfile',{email:email})
+      }
     } catch (error) {
       showToast(error.error,'error');
     }
@@ -125,11 +128,11 @@ const Login = ({navigation}) => {
           </View>
 
           {/* Forgot Password Link */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             onPress={() => navigation.navigate('ForgotPassword')}
             style={styles.forgotPasswordContainer}>
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Login Button */}
           <CustomButton

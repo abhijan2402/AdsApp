@@ -6,7 +6,7 @@ import { useToast } from '../Constants/ToastContext';
 const BASE_URL = 'http://62.72.12.87:3000/';
 
 
-export const IMAGEURL = 'http://82.112.236.195:3000/uploads/profiles/'
+export const IMAGEURL = 'http://62.72.12.87:3000'
 
 export const SERVICE_LIST_URL = "http://82.112.236.195:3000/uploads/"
 export const useApi = () => {
@@ -120,10 +120,10 @@ export const useApi = () => {
 
   const putRequest = async (endpoint, data = {}, isMultipart = false) => {
     // console.log(data, 'DATA');
-    // console.log(token, 'TOKEN');
+    console.log(token, 'TOKEN');
     // console.log(`${BASE_URL}${endpoint}`);
     const headers = {
-      ...(isMultipart ? {} : { 'Content-Type': 'application/json' }),
+      ...(isMultipart ? {'Content-Type':'multipart/form-data'} : { 'Content-Type': 'application/json' }),
       Authorization: `Bearer ${token}`,
     };
     try {

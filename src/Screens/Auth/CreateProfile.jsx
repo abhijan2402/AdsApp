@@ -17,10 +17,18 @@ import {AuthContext} from '../../Backend/AuthContent';
 import Header from '../../Components/FeedHeader';
 import CustomButton from '../../Components/CustomButton';
 import FONT from '../../Constants/Font';
+import { useToast } from '../../Constants/ToastContext';
+import { useApi } from '../../Backend/Api';
+import { api_routes } from '../../Constants/ApiRoute';
+import ImagePicker from "react-native-image-crop-picker";
+import { useRoute } from '@react-navigation/native';
 
 const CreateProfile = ({navigation}) => {
   const {setUser} = useContext(AuthContext);
-
+  const { showToast } = useToast();
+  const { putRequest } = useApi();
+  const route = useRoute();
+  const {email}=route.params;
   const [formData, setFormData] = useState({
     fullName: '',
     dob: '',
@@ -53,21 +61,50 @@ const CreateProfile = ({navigation}) => {
     }
   };
 
+  const pickImage = async () => {
+    try {
+      const image = await ImagePicker.openPicker({
+        width: 300,
+        height: 400,
+        cropping: false,
+      });
+      console.log('Selected Image:', image);
+      handleChange('profilePic', image);
+    } catch (err) {
+      console.log(err,'err');
+      
+    }
+  };
+
   /** Save profile */
-  const handleSaveProfile = () => {
-    navigation.navigate('BottomNavigation');
-    return;
-    if (
-      !formData.fullName ||
-      !formData.dob ||
-      !formData.mobileNumber ||
-      !formData.gender
-    ) {
+  const handleSaveProfile = async () => {
+    if (!formData.fullName || !formData.dob || !formData.mobileNumber || !formData.gender) {
       alert('Please fill all fields');
       return;
     }
-    console.log('Profile Data:', formData);
-    setUser(true); // Mark user as logged in
+     try {
+      const data = new FormData();
+      data.append('name',formData.fullName)
+      data.append('phone',formData.mobileNumber)
+      data.append('dob',formData.dob)
+      data.append('gender',formData.gender)
+      if (formData.profilePic) {
+        data.append('profileImage', {
+          uri: formData.profilePic.path,
+          type: 'image/jpeg',
+          name: formData.profilePic.filename,
+        });
+      }
+      const response = await putRequest(api_routes.complete_profile,data,true);
+      if(!response.success)
+        throw response;
+      showToast(response?.data?.response?.message,'success')
+      setUser({...response?.data?.response?.user, email});
+    } catch (error) {
+      showToast(error.error,'error')
+    }r
+    
+    // setUser(true); // Mark user as logged in
   };
 
   return (
@@ -82,10 +119,10 @@ const CreateProfile = ({navigation}) => {
           keyboardShouldPersistTaps="handled">
           <View style={styles.card}>
             {/* Profile Picture (Optional) */}
-            <TouchableOpacity style={styles.profilePicWrapper}>
+            <TouchableOpacity onPress={pickImage} style={styles.profilePicWrapper}>
               {formData.profilePic ? (
                 <Image
-                  source={{uri: formData.profilePic}}
+                  source={{uri: formData.profilePic.path}}
                   style={styles.profilePic}
                 />
               ) : (

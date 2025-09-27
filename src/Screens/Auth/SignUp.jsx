@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,6 +16,10 @@ import {COLOR} from '../../Constants/Colors';
 import {windowHeight, windowWidth} from '../../Constants/Dimensions';
 import CustomButton from '../../Components/CustomButton';
 import FONT from '../../Constants/Font';
+import { AuthContext } from '../../Backend/AuthContent';
+import { useToast } from '../../Constants/ToastContext';
+import { useApi } from '../../Backend/Api';
+import { api_routes } from '../../Constants/ApiRoute';
 
 const SignUp = ({navigation}) => {
   const [email, setEmail] = useState('');
@@ -23,8 +27,12 @@ const SignUp = ({navigation}) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { showToast } = useToast();
+  const auth = useContext(AuthContext);
+  const { postRequest } = useApi();
+  const {setToken} = auth;
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
       alert('Please fill in all fields');
       return;
@@ -33,8 +41,20 @@ const SignUp = ({navigation}) => {
       alert('Passwords do not match');
       return;
     }
-    alert('Account created successfully!');
-    navigation.navigate('Login');
+    try {
+      const body = {
+        email: email,
+        password: password
+      }
+      const response = await postRequest(api_routes.sign_up,body);
+      if(!response.success)
+        throw response;
+      showToast(response?.data?.response?.message,'success')
+      setToken(response?.data?.response?.token);
+      navigation.replace('CreateProfile',{email:email})
+    } catch (error) {
+      showToast(error.error,'error')
+    }
   };
 
   return (

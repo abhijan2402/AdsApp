@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentStatus, setCurrentStatus] = useState(-1);
+  const [walletData, setWalletData] = useState(null)
 
   const [currentAddress, setCurrentAddress] = useState(null);
 
@@ -103,6 +104,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const removeAllData=async()=>{
+    AsyncStorage.removeItem('token');
+    AsyncStorage.removeItem('currentAddress');
+    AsyncStorage.removeItem('user');
+    setUser(false)
+    setToken(null)
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -117,6 +126,9 @@ export const AuthProvider = ({ children }) => {
         setCurrentStatus: setCurrentStatus,
         currentAddress,
         setCurrentAddress: saveCurrentAddress,
+        removeAllData,
+        walletData, 
+        setWalletData
       }}
     >
       {children}

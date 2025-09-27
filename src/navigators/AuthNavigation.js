@@ -25,7 +25,6 @@ const AuthStack = () => {
       <Stack.Screen name="CreateProfile" component={CreateProfile} />
       <Stack.Screen name="SignUp" component={SignUp} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-      <Stack.Screen name="BottomNavigation" component={BottomNavigation} />
 
       <Stack.Screen name="BankAccountDetails" component={BankAccountDetails} />
       <Stack.Screen name="Cms" component={Cms} />

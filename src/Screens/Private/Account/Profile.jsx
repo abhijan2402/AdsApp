@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -14,13 +14,81 @@ import Header from '../../../Components/FeedHeader';
 import CustomButton from '../../../Components/CustomButton';
 import FONT from '../../../Constants/Font';
 import { AuthContext } from '../../../Backend/AuthContent';
+import { IMAGEURL, useApi } from '../../../Backend/Api';
+import { api_routes } from '../../../Constants/ApiRoute';
+import { useToast } from '../../../Constants/ToastContext';
+import { useIsFocused } from '@react-navigation/native';
 
 const Profile = ({navigation}) => {
-  const handlePress = action => {
-    Alert.alert(action, `${action} clicked!`);
-  };
+  const [walletData,setWalletData] = useState({totalPoints:0, totalAmountRedeemed:0})
   const auth = useContext(AuthContext);
-  const {user} = auth;
+  const {user, removeAllData} = auth;
+  const { showToast } = useToast();
+  const { deleteRequest, getRequest } = useApi();
+  const isFocused = useIsFocused();
+  useEffect(()=>{
+    getWalletData()
+  },[isFocused])
+
+  const logout=()=>{
+    Alert.alert(
+    "Logout",
+    "Are you sure you want to logout?",
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Yes, Logout",
+        onPress: async () => {
+          await removeAllData();
+        },
+        style: "destructive",
+      },
+    ],
+    { cancelable: true }
+  );
+  }
+
+   const deleteAccount=()=>{
+    Alert.alert(
+    "Delete Account",
+    "Are you sure you want to delete account?",
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Yes, Delete",
+        onPress: async () => {
+          const response = await deleteRequest(api_routes.delete_user);
+          if(!response.success)
+            throw response;
+          showToast(response?.data?.response?.message,'success')
+          await removeAllData();
+        },
+        style: "destructive",
+      },
+    ],
+    { cancelable: true }
+  );
+  }
+
+  const getWalletData=async()=>{
+    try {
+          const response = await getRequest(api_routes.get_user_details);
+          if(!response.success)
+            throw response;
+          setWalletData({
+            totalPoints: response.data?.response?.wallet?.totalPoints,
+            totalAmountRedeemed: response.data?.response?.wallet?.totalAmountRedeemed 
+          })
+        } catch (error) {
+          showToast(error.error,'error');
+        }
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -32,7 +100,9 @@ const Profile = ({navigation}) => {
         <View style={styles.profileHeaderCard}>
           <Image
             source={{
-              uri: 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+              uri: user?.profileImage?
+                  `${IMAGEURL}${user.profileImage}`:
+                  'https://cdn-icons-png.flaticon.com/512/149/149071.png',
             }}
             style={styles.profileImage}
           />
@@ -40,26 +110,16 @@ const Profile = ({navigation}) => {
             <Text style={styles.userName}>{user?.name}</Text>
             <Text style={styles.userEmail}>{user?.email}</Text>
           </View>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('CreateProfile')}>
-            <Image
-              source={{
-                uri: 'https://cdn-icons-png.flaticon.com/128/1160/1160515.png', // Edit Icon
-              }}
-              style={styles.editIcon}
-            />
-          </TouchableOpacity>
         </View>
-        {/* ---------- Total Earnings Card ---------- */}
         <View style={styles.earningCard}>
           <View style={styles.earningBox}>
             <Text style={styles.earningLabel}>Total Earnings</Text>
-            <Text style={styles.earningValue}>₹ 15,250</Text>
+            <Text style={styles.earningValue}>₹ {walletData?.totalPoints}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.earningBox}>
             <Text style={styles.earningLabel}>Convertable Cash</Text>
-            <Text style={styles.earningValue}>₹ 7,800</Text>
+            <Text style={styles.earningValue}>₹ {walletData?.totalAmountRedeemed}</Text>
           </View>
         </View>
         {/* ---------- Profile Options ---------- */}
@@ -86,7 +146,7 @@ const Profile = ({navigation}) => {
             />
             <Text style={styles.optionText}>Daily Earning</Text>
           </TouchableOpacity>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.optionButton}
             onPress={() => navigation.navigate('BankAccountDetails')}>
             <Image
@@ -96,7 +156,7 @@ const Profile = ({navigation}) => {
               style={styles.optionIcon}
             />
             <Text style={styles.optionText}>Account Details</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity
             style={styles.optionButton}
@@ -124,7 +184,7 @@ const Profile = ({navigation}) => {
 
           <TouchableOpacity
             style={styles.optionButton}
-            onPress={() => handlePress('Logout')}>
+            onPress={logout}>
             <Image
               source={{
                 uri: 'https://cdn-icons-png.flaticon.com/512/1828/1828490.png',
@@ -141,7 +201,7 @@ const Profile = ({navigation}) => {
         <View style={styles.deleteButtonWrapper}>
           <CustomButton
             title="Delete Account"
-            onPress={() => handlePress('Delete Account')}
+            onPress={deleteAccount}
             backgroundColor={COLOR.danger}
             textColor={COLOR.white}
           />

@@ -1,6 +1,7 @@
 export const api_routes = {
     login:"api/user/login",
-    register:"api/user/signup-user",
+    sign_up:"api/user/signup",
+    complete_profile:"api/user/complete-profile",
     get_user_details:'api/user/get-user-details',
     update_user:'api/user/update-profile',
     delete_user:'api/user/delete-user',
