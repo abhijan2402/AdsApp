@@ -1,4 +1,4 @@
-import React, {use, useContext, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,11 +11,12 @@ import Header from '../../../Components/FeedHeader';
 import FONT from '../../../Constants/Font';
 import {COLOR} from '../../../Constants/Colors';
 import {windowWidth} from '../../../Constants/Dimensions';
-import { AuthContext } from '../../../Backend/AuthContent';
+import {AuthContext} from '../../../Backend/AuthContent';
+
+// ✅ Import Google Ads
+import {BannerAd, BannerAdSize, TestIds} from 'react-native-google-mobile-ads';
 
 const Home = () => {
-  // Dummy Data
-  // const [userName] = useState('John Doe');
   const [totalPoints] = useState(3250);
   const [conversionRate] = useState(0.1); // 1 point = 0.10 INR
   const [withdrawHistory] = useState([
@@ -36,6 +37,7 @@ const Home = () => {
       claimed: false,
     },
   ]);
+
   const auth = useContext(AuthContext);
   const {user} = auth;
 
@@ -49,11 +51,17 @@ const Home = () => {
     );
   };
 
+  // ✅ Use Test Banner ID for development
+  const bannerAdUnitId = __DEV__
+    ? TestIds.BANNER
+    : 'ca-app-pub-3056425951476582/1234567890';
+
   return (
     <View style={styles.safeArea}>
       <Header title={'Home'} />
+
       <ScrollView contentContainerStyle={styles.container}>
-        {/* ---------- Banner ---------- */}
+        {/* ---------- Banner Card ---------- */}
         <View style={styles.bannerCard}>
           <Image
             source={{
@@ -70,7 +78,7 @@ const Home = () => {
           </View>
         </View>
 
-        {/* ---------- User Name ---------- */}
+        {/* ---------- User Info ---------- */}
         <View style={styles.userInfoSection}>
           <Text style={styles.welcomeText}>Welcome, </Text>
           <Text style={styles.userName}>{user?.name}</Text>
@@ -78,7 +86,7 @@ const Home = () => {
 
         {/* ---------- Tasks Section ---------- */}
         <View style={styles.taskSection}>
-          <Text style={styles.taskTitle}>Earn more by doing simple task</Text>
+          <Text style={styles.taskTitle}>Earn more by doing simple tasks</Text>
           {tasks.map(task => (
             <View key={task.id} style={styles.taskRow}>
               <View style={{flex: 1}}>
@@ -105,7 +113,7 @@ const Home = () => {
         </View>
 
         {/* ---------- Withdraw History ---------- */}
-        <View style={styles.historySection}>
+        {/* <View style={styles.historySection}>
           <Text style={styles.historyTitle}>Last 5 Withdrawals</Text>
           {withdrawHistory.map(item => (
             <View key={item.id} style={styles.historyRow}>
@@ -113,8 +121,20 @@ const Home = () => {
               <Text style={styles.historyAmount}>₹{item.amount}</Text>
             </View>
           ))}
-        </View>
+        </View> */}
       </ScrollView>
+
+      {/* ---------- Google Banner Ad ---------- */}
+      <View style={styles.adContainer}>
+        <BannerAd
+          unitId={bannerAdUnitId}
+          // size={BannerAdSize.FULL_BANNER}
+          size={BannerAdSize.LARGE_BANNER}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: true,
+          }}
+        />
+      </View>
     </View>
   );
 };
@@ -128,6 +148,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 16,
+    paddingBottom: 80, // space for banner ad
   },
 
   /* ---------- Banner ---------- */
@@ -180,7 +201,7 @@ const styles = StyleSheet.create({
     fontFamily: FONT.Bold,
   },
 
-  /* ---------- Tasks Section ---------- */
+  /* ---------- Tasks ---------- */
   taskSection: {
     backgroundColor: '#fff',
     padding: 14,
@@ -266,5 +287,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FONT.Bold,
     color: '#007AFF',
+  },
+
+  /* ---------- Ad Container ---------- */
+  adContainer: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
   },
 });
