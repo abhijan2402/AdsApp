@@ -1,4 +1,4 @@
-import React, {use, useContext, useState} from 'react';
+import React, {use, useContext, useEffect, useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,19 +12,16 @@ import FONT from '../../../Constants/Font';
 import {COLOR} from '../../../Constants/Colors';
 import {windowWidth} from '../../../Constants/Dimensions';
 import { AuthContext } from '../../../Backend/AuthContent';
+import { useApi } from '../../../Backend/Api';
+import { api_routes } from '../../../Constants/ApiRoute';
+import { useToast } from '../../../Constants/ToastContext';
 
 const Home = () => {
   // Dummy Data
   // const [userName] = useState('John Doe');
   const [totalPoints] = useState(3250);
   const [conversionRate] = useState(0.1); // 1 point = 0.10 INR
-  const [withdrawHistory] = useState([
-    {id: 1, amount: 250, date: '15 Sep 2025'},
-    {id: 2, amount: 500, date: '08 Sep 2025'},
-    {id: 3, amount: 300, date: '01 Sep 2025'},
-    {id: 4, amount: 150, date: '25 Aug 2025'},
-    {id: 5, amount: 400, date: '18 Aug 2025'},
-  ]);
+  const { getRequest } = useApi();
 
   const [tasks, setTasks] = useState([
     {id: 1, title: 'Visit daily to earn 40 points', points: 40, claimed: false},
@@ -38,6 +35,23 @@ const Home = () => {
   ]);
   const auth = useContext(AuthContext);
   const {user} = auth;
+  const [lastTransaction,setLastTransaction]=  useState([]);
+  const { showToast } = useToast();
+
+  useEffect(()=>{
+    getHomeData()
+  },[])
+
+  const getHomeData=async()=>{
+    try {
+      const response = await getRequest(api_routes.user_analytics);
+      if(!response.success)
+        throw response;
+      setLastTransaction(response?.data?.response?.latestTransactions)
+    } catch (error) {
+      showToast(error.error,'error');
+    }
+  }
 
   const totalMoney = (totalPoints * conversionRate).toFixed(2);
 
@@ -105,15 +119,19 @@ const Home = () => {
         </View>
 
         {/* ---------- Withdraw History ---------- */}
-        <View style={styles.historySection}>
-          <Text style={styles.historyTitle}>Last 5 Withdrawals</Text>
-          {withdrawHistory.map(item => (
-            <View key={item.id} style={styles.historyRow}>
-              <Text style={styles.historyDate}>{item.date}</Text>
-              <Text style={styles.historyAmount}>₹{item.amount}</Text>
-            </View>
-          ))}
-        </View>
+        {
+          lastTransaction?.length > 0 &&
+          <View style={styles.historySection}>
+            <Text style={styles.historyTitle}>Last 5 Withdrawals</Text>
+            {
+              lastTransaction.map(item => (
+              <View key={item.id} style={styles.historyRow}>
+                <Text style={styles.historyDate}>{new Date(item.createdAt).toDateString()}</Text>
+                <Text style={styles.historyAmount}>₹{item.amountRedeemed}</Text>
+              </View>
+            ))}
+          </View>
+        }
       </ScrollView>
     </View>
   );
