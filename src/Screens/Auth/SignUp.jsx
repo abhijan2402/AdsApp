@@ -31,6 +31,7 @@ const SignUp = ({navigation}) => {
   const auth = useContext(AuthContext);
   const { postRequest } = useApi();
   const {setToken} = auth;
+  const [loading, setLoading] = useState(false)
 
   const handleSignUp = async () => {
     if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -42,6 +43,7 @@ const SignUp = ({navigation}) => {
       return;
     }
     try {
+      setLoading(true)
       const body = {
         email: email,
         password: password
@@ -52,7 +54,9 @@ const SignUp = ({navigation}) => {
       showToast(response?.data?.response?.message,'success')
       setToken(response?.data?.response?.token);
       navigation.replace('CreateProfile',{email:email})
+      setLoading(false)
     } catch (error) {
+      setLoading(false)
       showToast(error.error,'error')
     }
   };
@@ -146,6 +150,7 @@ const SignUp = ({navigation}) => {
 
           {/* Create Account Button */}
           <CustomButton
+            loading={loading}
             title={'Create Account'}
             onPress={handleSignUp}
             style={styles.signUpButton}

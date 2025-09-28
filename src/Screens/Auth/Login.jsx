@@ -27,6 +27,7 @@ const Login = ({navigation}) => {
   const [password, setPassword] = useState('');
   const { postRequest } = useApi();
   const { showToast } = useToast();
+  const [loading, setLoading] = useState(false)
   const auth = useContext(AuthContext);
   const {setUser, setToken} = auth;
 
@@ -44,6 +45,7 @@ const Login = ({navigation}) => {
         email: email,
         password: password
       }
+      setLoading(true)
       const response = await postRequest(api_routes.login,body);
       if(!response.success)
         throw response;
@@ -53,7 +55,9 @@ const Login = ({navigation}) => {
       }else{
         navigation.navigate('CreateProfile',{email:email})
       }
+      setLoading(false)
     } catch (error) {
+      setLoading(false)
       showToast(error.error,'error');
     }
   }
@@ -136,6 +140,7 @@ const Login = ({navigation}) => {
 
           {/* Login Button */}
           <CustomButton
+            loading={loading}
             title={'Login'}
             onPress={login}
             style={styles.loginButton}

@@ -6,6 +6,8 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Header from '../../../Components/FeedHeader';
 import FONT from '../../../Constants/Font';
@@ -16,30 +18,29 @@ import { useApi } from '../../../Backend/Api';
 import { api_routes } from '../../../Constants/ApiRoute';
 import { useToast } from '../../../Constants/ToastContext';
 
+// ✅ Import Google Ads
+import {BannerAd, BannerAdSize, TestIds} from 'react-native-google-mobile-ads';
+
 const Home = () => {
-  // Dummy Data
-  // const [userName] = useState('John Doe');
   const [totalPoints] = useState(3250);
   const [conversionRate] = useState(0.1); // 1 point = 0.10 INR
-  const { getRequest } = useApi();
+  const { getRequest, putRequest } = useApi();
 
   const [tasks, setTasks] = useState([
-    {id: 1, title: 'Visit daily to earn 40 points', points: 40, claimed: false},
-    {id: 2, title: 'Watch 1 Ad to earn 20 points', points: 20, claimed: false},
-    {
-      id: 3,
-      title: 'Refer a friend to earn 100 points',
-      points: 100,
-      claimed: false,
-    },
+    {id: 1, title: 'Visit daily to earn 40 points', points: 40, claimed: false, keyName:'visitedDate',matchName: 'visitedToday'},
+    {id: 2, title: 'Watch 1 Ad to earn 20 points', points: 20, claimed: false, keyName:'dailyAdClaimedDate', matchName:'adClaimedToday'},
+    {id: 3,title: 'Refer a friend to earn 100 points',points: 100,claimed: false,keyName:null, matchName:null},
   ]);
+
   const auth = useContext(AuthContext);
   const {user} = auth;
   const [lastTransaction,setLastTransaction]=  useState([]);
   const { showToast } = useToast();
+  const [loading, setLoading] = useState(false)
 
   useEffect(()=>{
-    getHomeData()
+    getDashboardData();
+    getHomeData();
   },[])
 
   const getHomeData=async()=>{
@@ -53,21 +54,87 @@ const Home = () => {
     }
   }
 
+  const getDashboardData=async()=>{
+    try {
+      const response = await getRequest(api_routes.get_dashboard_data);
+      if(!response.success)
+        throw response;
+        const dashboardData = response?.data?.response?.dashboard;
+         const updatedTasks = tasks.map(task => {
+          if (task.matchName && dashboardData.hasOwnProperty(task.matchName)) {
+            return { ...task, claimed: dashboardData[task.matchName] };
+          }
+          return task;
+        });
+      setTasks(updatedTasks);
+    } catch (error) {
+      showToast(error.error,'error');
+    }
+  }
+
   const totalMoney = (totalPoints * conversionRate).toFixed(2);
 
-  const handleClaim = taskId => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === taskId ? {...task, claimed: true} : task,
-      ),
-    );
+  const handleClaim = async (taskId) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || !task.keyName) {
+      console.log('No keyName for this task or task not found');
+      return;
+    }
+
+    const data = {
+      keyName: task.keyName,
+      points: task.points,
+    };
+    Alert.alert(
+    'Confirm Claim',
+    `Do you want to claim and earn ${task.points} points?`,
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Yes',
+        onPress: async () => {
+          setLoading(true)
+           try {
+              const response = await putRequest(api_routes.update_dashboard_data, data);
+              if (!response.success) throw response;
+              await getDashboardData();
+              showToast(`You earned ${task.points} points!`, 'success');
+              setLoading(false)
+            } catch (error) {
+              console.log(error);
+              setLoading(false)
+              showToast(error.error || 'Failed to claim task', 'error');
+            }
+        },
+      },
+    ],
+    { cancelable: true }
+  );
+    
   };
+
+  if(loading){
+    return (
+      <View style={{flex:1, alignItems:'center', justifyContent:'center'}}>
+        <ActivityIndicator size={30} color={'black'} />
+      </View>
+    )
+  }
+
+  // ✅ Use Test Banner ID for development
+  const bannerAdUnitId = __DEV__
+    ? TestIds.BANNER
+    : 'ca-app-pub-3056425951476582/1234567890';
 
   return (
     <View style={styles.safeArea}>
       <Header title={'Home'} />
+
       <ScrollView contentContainerStyle={styles.container}>
-        {/* ---------- Banner ---------- */}
+        {/* ---------- Banner Card ---------- */}
         <View style={styles.bannerCard}>
           <Image
             source={{
@@ -84,7 +151,7 @@ const Home = () => {
           </View>
         </View>
 
-        {/* ---------- User Name ---------- */}
+        {/* ---------- User Info ---------- */}
         <View style={styles.userInfoSection}>
           <Text style={styles.welcomeText}>Welcome, </Text>
           <Text style={styles.userName}>{user?.name}</Text>
@@ -92,7 +159,7 @@ const Home = () => {
 
         {/* ---------- Tasks Section ---------- */}
         <View style={styles.taskSection}>
-          <Text style={styles.taskTitle}>Earn more by doing simple task</Text>
+          <Text style={styles.taskTitle}>Earn more by doing simple tasks</Text>
           {tasks.map(task => (
             <View key={task.id} style={styles.taskRow}>
               <View style={{flex: 1}}>
@@ -133,6 +200,18 @@ const Home = () => {
           </View>
         }
       </ScrollView>
+
+      {/* ---------- Google Banner Ad ---------- */}
+      <View style={styles.adContainer}>
+        <BannerAd
+          unitId={bannerAdUnitId}
+          // size={BannerAdSize.FULL_BANNER}
+          size={BannerAdSize.LARGE_BANNER}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: true,
+          }}
+        />
+      </View>
     </View>
   );
 };
@@ -146,6 +225,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 16,
+    paddingBottom: 80, // space for banner ad
   },
 
   /* ---------- Banner ---------- */
@@ -198,7 +278,7 @@ const styles = StyleSheet.create({
     fontFamily: FONT.Bold,
   },
 
-  /* ---------- Tasks Section ---------- */
+  /* ---------- Tasks ---------- */
   taskSection: {
     backgroundColor: '#fff',
     padding: 14,
@@ -284,5 +364,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FONT.Bold,
     color: '#007AFF',
+  },
+
+  /* ---------- Ad Container ---------- */
+  adContainer: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
   },
 });

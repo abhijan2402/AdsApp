@@ -24,6 +24,7 @@ const Profile = ({navigation}) => {
   const auth = useContext(AuthContext);
   const {user, removeAllData} = auth;
   const { showToast } = useToast();
+  const [loading, setLoading] = useState(false)
   const { deleteRequest, getRequest } = useApi();
   const isFocused = useIsFocused();
   useEffect(()=>{
@@ -63,11 +64,13 @@ const Profile = ({navigation}) => {
       {
         text: "Yes, Delete",
         onPress: async () => {
+          setLoading(true)
           const response = await deleteRequest(api_routes.delete_user);
           if(!response.success)
             throw response;
           showToast(response?.data?.response?.message,'success')
           await removeAllData();
+          setLoading(false)
         },
         style: "destructive",
       },
@@ -200,6 +203,7 @@ const Profile = ({navigation}) => {
         {/* ---------- Delete Account Button ---------- */}
         <View style={styles.deleteButtonWrapper}>
           <CustomButton
+            loading={loading}
             title="Delete Account"
             onPress={deleteAccount}
             backgroundColor={COLOR.danger}

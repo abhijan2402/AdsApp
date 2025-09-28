@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1022122197723",
+    "project_id": "adsapp-ab15b",
+    "storage_bucket": "adsapp-ab15b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1022122197723:android:84cd24c700882fa96d82fe",
+        "android_client_info": {
+          "package_name": "com.adsapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVSjGxZWSlJh2ty4dA8euN7PErVah0ZG4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

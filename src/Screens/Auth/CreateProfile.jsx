@@ -27,6 +27,7 @@ const CreateProfile = ({navigation}) => {
   const {setUser} = useContext(AuthContext);
   const { showToast } = useToast();
   const { putRequest } = useApi();
+  const [loading,setLoading]=useState(false)
   const route = useRoute();
   const {email}=route.params;
   const [formData, setFormData] = useState({
@@ -83,6 +84,7 @@ const CreateProfile = ({navigation}) => {
       return;
     }
      try {
+      setLoading(true)
       const data = new FormData();
       data.append('name',formData.fullName)
       data.append('phone',formData.mobileNumber)
@@ -100,7 +102,9 @@ const CreateProfile = ({navigation}) => {
         throw response;
       showToast(response?.data?.response?.message,'success')
       setUser({...response?.data?.response?.user, email});
+      setLoading(false)
     } catch (error) {
+      setLoading(false)
       showToast(error.error,'error')
     }r
     
@@ -206,6 +210,7 @@ const CreateProfile = ({navigation}) => {
             {/* Save Profile Button */}
             <View style={styles.profileButtons}>
               <CustomButton
+                loading={loading}
                 title={'Save Profile'}
                 onPress={handleSaveProfile}
               />

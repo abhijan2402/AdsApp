@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useContext} from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,47 +6,46 @@ import {
   FlatList,
   SafeAreaView,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
+
 import {COLOR} from '../../../Constants/Colors';
 import FONT from '../../../Constants/Font';
 import Header from '../../../Components/FeedHeader';
+import {AuthContext} from '../../../Backend/AuthContent'; // If you need user ID
+import {useApi} from '../../../Backend/Api';
+import {useToast} from '../../../Constants/ToastContext';
+
+import {api_routes} from '../../../Constants/ApiRoute';
 
 const TransactionHistory = () => {
-  // Dummy Data
-  const [transactions] = useState([
-    {
-      id: '1',
-      points: 500,
-      amount: 50,
-      date: '19 Sep 2025',
-      transactionId: 'TXN987654321',
-      status: 'Completed',
-    },
-    {
-      id: '2',
-      points: 750,
-      amount: 75,
-      date: '15 Sep 2025',
-      transactionId: 'TXN987654322',
-      status: 'Completed',
-    },
-    {
-      id: '3',
-      points: 1200,
-      amount: 120,
-      date: '12 Sep 2025',
-      transactionId: 'TXN987654323',
-      status: 'Pending',
-    },
-    {
-      id: '4',
-      points: 300,
-      amount: 30,
-      date: '08 Sep 2025',
-      transactionId: 'TXN987654324',
-      status: 'Failed',
-    },
-  ]);
+  const auth = useContext(AuthContext);
+  const {user} = auth;
+
+  const {getRequest} = useApi();
+  const {showToast} = useToast();
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch transactions from API
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      const response = await getRequest(api_routes.list_earninGS);
+      console.log(response.data?.response?.earnings, 'RESPPPPP');
+      // Assume API returns array of transactions
+      setTransactions(response.data?.response?.earnings || []);
+    } catch (error) {
+      console.log('Error fetching transactions:', error);
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
 
   const getStatusStyle = status => {
     switch (status) {
@@ -63,22 +62,18 @@ const TransactionHistory = () => {
 
   const renderTransaction = ({item}) => (
     <View style={styles.transactionCard}>
-      {/* Left Section */}
       <View style={styles.leftSection}>
-        <Text style={styles.pointsText}>{item.points} Points</Text>
+        <Text style={styles.pointsText}>{item.pointsEarned} Points</Text>
         <Text style={styles.dateText}>{item.date}</Text>
-        <Text style={styles.transactionId}>ID: {item.transactionId}</Text>
+        <Text style={styles.transactionId}>ID: {item.adId}</Text>
       </View>
 
-      {/* Right Section */}
       <View style={styles.rightSection}>
-        <Text style={styles.amountText}>₹{item.amount}</Text>
-        <View
+        <Text style={styles.amountText}>₹{item.pointsEarned}</Text>
+        {/* <View
           style={[
             styles.statusBadge,
-            {
-              backgroundColor: getStatusStyle(item.status).backgroundColor,
-            },
+            {backgroundColor: getStatusStyle(item.status).backgroundColor},
           ]}>
           <Text
             style={[
@@ -87,11 +82,24 @@ const TransactionHistory = () => {
             ]}>
             {item.status}
           </Text>
-        </View>
+        </View> */}
         <Text style={styles.conversionText}>1 Point = ₹0.10</Text>
       </View>
     </View>
   );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <Header title="Transaction History" />
+        <ActivityIndicator
+          size="large"
+          color={COLOR.primary}
+          style={{marginTop: 50}}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -101,7 +109,7 @@ const TransactionHistory = () => {
       <FlatList
         data={transactions}
         renderItem={renderTransaction}
-        keyExtractor={item => item.id}
+        keyExtractor={(item, index) => item.transactionId || index.toString()}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No transactions yet.</Text>
@@ -114,15 +122,8 @@ const TransactionHistory = () => {
 export default TransactionHistory;
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLOR.white,
-  },
-  listContainer: {
-    padding: 16,
-  },
-
-  /* ---------- Transaction Card ---------- */
+  safeArea: {flex: 1, backgroundColor: COLOR.white},
+  listContainer: {padding: 16},
   transactionCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -138,16 +139,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E4E8F0',
   },
-  leftSection: {
-    flexDirection: 'column',
-    flex: 1,
-    marginRight: 10,
-  },
-  pointsText: {
-    fontSize: 18,
-    fontFamily: FONT.Bold,
-    color: COLOR.primary,
-  },
+  leftSection: {flexDirection: 'column', flex: 1, marginRight: 10},
+  pointsText: {fontSize: 18, fontFamily: FONT.Bold, color: COLOR.primary},
   dateText: {
     fontSize: 13,
     fontFamily: FONT.Medium,
@@ -160,33 +153,21 @@ const styles = StyleSheet.create({
     color: COLOR.textDark,
     marginTop: 6,
   },
-
-  rightSection: {
-    alignItems: 'flex-end',
-  },
-  amountText: {
-    fontSize: 18,
-    fontFamily: FONT.Bold,
-    color: COLOR.success,
-  },
+  rightSection: {alignItems: 'flex-end'},
+  amountText: {fontSize: 18, fontFamily: FONT.Bold, color: COLOR.success},
   statusBadge: {
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 12,
     marginTop: 8,
   },
-  statusText: {
-    fontSize: 12,
-    fontFamily: FONT.SemiBold,
-  },
+  statusText: {fontSize: 12, fontFamily: FONT.SemiBold},
   conversionText: {
     fontSize: 12,
     fontFamily: FONT.Regular,
     color: COLOR.grey,
     marginTop: 6,
   },
-
-  /* ---------- Empty State ---------- */
   emptyText: {
     textAlign: 'center',
     marginTop: 40,
