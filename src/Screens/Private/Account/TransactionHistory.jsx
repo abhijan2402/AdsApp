@@ -31,10 +31,8 @@ const TransactionHistory = () => {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const response = await getRequest(api_routes.list_earninGS);
-      console.log(response.data?.response?.earnings, 'RESPPPPP');
-      // Assume API returns array of transactions
-      setTransactions(response.data?.response?.earnings || []);
+      const response = await getRequest(api_routes.list_transaction);
+      setTransactions(response.data?.response?.transactions || []);
     } catch (error) {
       console.log('Error fetching transactions:', error);
       setTransactions([]);
@@ -49,11 +47,11 @@ const TransactionHistory = () => {
 
   const getStatusStyle = status => {
     switch (status) {
-      case 'Completed':
+      case 'COMPLETED':
         return {color: COLOR.success, backgroundColor: '#E9F9EE'};
-      case 'Pending':
+      case 'PENDING':
         return {color: COLOR.warning, backgroundColor: '#FFF7E5'};
-      case 'Failed':
+      case 'CANCELLED':
         return {color: COLOR.error, backgroundColor: '#FDECEA'};
       default:
         return {color: COLOR.grey, backgroundColor: '#EEE'};
@@ -63,14 +61,14 @@ const TransactionHistory = () => {
   const renderTransaction = ({item}) => (
     <View style={styles.transactionCard}>
       <View style={styles.leftSection}>
-        <Text style={styles.pointsText}>{item.pointsEarned} Points</Text>
+        <Text style={styles.pointsText}>{item.pointsRedeemed} Points</Text>
         <Text style={styles.dateText}>{item.date}</Text>
-        <Text style={styles.transactionId}>ID: {item.adId}</Text>
+        <Text style={styles.transactionId}>ID: {item.transactionId}</Text>
       </View>
 
       <View style={styles.rightSection}>
-        <Text style={styles.amountText}>₹{item.pointsEarned}</Text>
-        {/* <View
+        <Text style={styles.amountText}>₹{item.amountRedeemed}</Text>
+        <View
           style={[
             styles.statusBadge,
             {backgroundColor: getStatusStyle(item.status).backgroundColor},
@@ -82,7 +80,7 @@ const TransactionHistory = () => {
             ]}>
             {item.status}
           </Text>
-        </View> */}
+        </View>
         <Text style={styles.conversionText}>1 Point = ₹0.10</Text>
       </View>
     </View>
