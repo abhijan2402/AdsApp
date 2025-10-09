@@ -1,4 +1,4 @@
-package com.adsapp
+package com.eranu
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

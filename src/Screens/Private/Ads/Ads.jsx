@@ -6,12 +6,13 @@ import {
   TouchableOpacity,
   Animated,
   Easing,
-  Alert,
+  Modal,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import LottieView from 'lottie-react-native';
 import FONT from '../../../Constants/Font';
 import {COLOR} from '../../../Constants/Colors';
-import {useInterstitialAd, TestIds} from 'react-native-google-mobile-ads';
+import {useRewardedAd, TestIds} from 'react-native-google-mobile-ads';
 import {useApi} from '../../../Backend/Api';
 import {useToast} from '../../../Constants/ToastContext';
 import {api_routes} from '../../../Constants/ApiRoute';
@@ -19,53 +20,59 @@ import {api_routes} from '../../../Constants/ApiRoute';
 const Ads = () => {
   const spinValue = useRef(new Animated.Value(0)).current;
   const [spinning, setSpinning] = useState(false);
-  const [adsToShow, setAdsToShow] = useState(0);
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [earnedPoints, setEarnedPoints] = useState(0);
+
   const {postRequest} = useApi();
   const {showToast} = useToast();
-  const rewards = [50, 100, 150, 200, 250]; // Reward points
+
+  // Reward values
+  const rewards = [50, 100, 150, 200, 250];
   const segmentAngle = 360 / rewards.length;
 
-  // Hook for interstitial ads
-  const {isLoaded, isClosed, load, show} = useInterstitialAd(
-    TestIds.INTERSTITIAL_VIDEO,
+  // ✅ Use Rewarded Ad instead of Interstitial
+  const adUnitId = __DEV__
+    ? TestIds.REWARDED
+    : 'ca-app-pub-3056425951476582/5056383221'; // ✅ Your real ID
+
+  const {isLoaded, isEarnedReward, load, show, reward} = useRewardedAd(
+    adUnitId,
     {
       requestNonPersonalizedAdsOnly: true,
     },
   );
 
-  // Load interstitial ad immediately
+  // Load ad initially
   useEffect(() => {
-    console.log('loading');
-
     load();
   }, [load]);
 
-  // Handle closing of an interstitial
+  // ✅ When user earns reward
   useEffect(() => {
-    if (isClosed && adsToShow > 0) {
-      console.log('HI');
-
-      setAdsToShow(prev => prev - 1); // Reduce count
-      CallReward();
-      load(); // Load next ad
+    if (isEarnedReward && reward) {
+      console.log('Reward Earned:', reward);
+      CallReward(earnedPoints);
     }
-  }, [isClosed]);
-  const CallReward = async () => {
+  }, [isEarnedReward, reward]);
+
+  // Reward API call
+  const CallReward = async points => {
     try {
       const body = {
         adId: '123132',
-        pointsEarned: 50,
+        pointsEarned: points,
         adDuration: 5,
       };
       const response = await postRequest(api_routes.add_new_earning, body);
-      console.log(response, 'RESPPPPP');
+      console.log(response, 'Reward Response');
+      showToast(`You earned ${points} points!`, 'success');
     } catch (error) {
-      showToast(error.error, 'error');
+      showToast(error.error || 'Error while rewarding', 'error');
     }
   };
+
   const spinArrow = () => {
     if (spinning) return;
-
     setSpinning(true);
 
     const randomIndex = Math.floor(Math.random() * rewards.length);
@@ -81,24 +88,17 @@ const Ads = () => {
       spinValue.setValue(totalRotation % 360);
       setSpinning(false);
 
-      const earnedPoints = rewards[randomIndex];
-      Alert.alert('🎉 Congratulations!', `You earned ${earnedPoints} points!`);
+      const points = rewards[randomIndex];
+      setEarnedPoints(points);
+      setShowRewardModal(true);
 
-      // Show multiple interstitial ads based on points
-      const numAds = Math.floor(earnedPoints / 50);
-      console.log(numAds, 'ADSSSSSSSSSS');
-      if (numAds > 0) {
-        setAdsToShow(numAds);
-      }
+      // Show rewarded ad after animation delay
+      setTimeout(() => {
+        if (isLoaded) show();
+        else showToast('Ad not ready yet, try again!', 'info');
+      }, 3500);
     });
   };
-
-  // Show interstitial whenever adsToShow > 0 and ad is loaded
-  useEffect(() => {
-    if (adsToShow > 0 && isLoaded) {
-      show();
-    }
-  }, [adsToShow, isLoaded]);
 
   const rotateData = spinValue.interpolate({
     inputRange: [0, 360],
@@ -110,9 +110,12 @@ const Ads = () => {
       colors={['#FFF6E0', '#FFE69A', '#ffdd54ff']}
       style={styles.gradientBackground}>
       <View style={styles.container}>
-        <Text style={styles.title}>Spin the Arrow & Earn!</Text>
+        <Text style={[styles.title, {marginBottom: 10}]}>
+          Spin the Arrow & Earn!
+        </Text>
+        <Text style={styles.title}>50 Points = 1 Ad</Text>
 
-        {/* Outer Circle */}
+        {/* Wheel */}
         <View style={styles.outerCircle}>
           {rewards.map((reward, index) => {
             const angle = index * segmentAngle;
@@ -128,7 +131,6 @@ const Ads = () => {
             );
           })}
 
-          {/* Inner Circle */}
           <LinearGradient
             colors={['#FFF7D1', '#FFD700']}
             style={styles.innerCircle}>
@@ -152,6 +154,28 @@ const Ads = () => {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Reward Modal */}
+      <Modal
+        visible={showRewardModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRewardModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <LottieView
+              source={require('../../../assets/Lottie/Coins.json')}
+              autoPlay
+              loop={false}
+              style={{width: 200, height: 250}}
+              onAnimationFinish={() => setShowRewardModal(false)}
+            />
+            <Text style={styles.rewardText}>
+              🎉 You earned {earnedPoints} points!
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -171,9 +195,6 @@ const styles = StyleSheet.create({
     fontFamily: FONT.Bold,
     color: COLOR.primary,
     marginBottom: 50,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: {width: 1, height: 1},
-    textShadowRadius: 4,
   },
   outerCircle: {
     width: 270,
@@ -184,7 +205,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 40,
-    position: 'relative',
     backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOpacity: 0.15,
@@ -204,10 +224,6 @@ const styles = StyleSheet.create({
     borderRadius: 70,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FFD700',
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
   },
   arrowContainer: {
     position: 'absolute',
@@ -227,21 +243,37 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderBottomColor: '#FF4500',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
   },
   spinButton: {
     backgroundColor: COLOR.primary,
     paddingVertical: 14,
     paddingHorizontal: 50,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4,
     marginTop: 40,
   },
-  spinButtonText: {fontSize: 18, fontFamily: FONT.SemiBold, color: '#fff'},
+  spinButtonText: {
+    fontSize: 18,
+    fontFamily: FONT.SemiBold,
+    color: '#fff',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    width: 280,
+  },
+  rewardText: {
+    fontSize: 18,
+    fontFamily: FONT.Bold,
+    color: COLOR.primary,
+    marginTop: 10,
+    textAlign: 'center',
+  },
 });

@@ -16,7 +16,7 @@ export const useApi = () => {
   const postRequest = async (endpoint, data = {}, isMultipart = false) => {
     console.log(data, 'DATA');
     console.log(token, 'TOKEN');
-    // console.log(`${BASE_URL}${endpoint}`);
+    console.log(`${BASE_URL}${endpoint}`);
     const headers = {
       ...(isMultipart ? {} : { 'Content-Type': 'application/json' }),
       Authorization: `Bearer ${token}`,
@@ -27,6 +27,7 @@ export const useApi = () => {
         headers,
         body: isMultipart ? data : JSON.stringify(data),
       });
+      console.log(response, "RESPPP");
 
       const json = await response.json();
       if (!response.ok) {
@@ -124,7 +125,7 @@ export const useApi = () => {
     console.log(token, 'TOKEN');
     // console.log(`${BASE_URL}${endpoint}`);
     const headers = {
-      ...(isMultipart ? {'Content-Type':'multipart/form-data'} : { 'Content-Type': 'application/json' }),
+      ...(isMultipart ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' }),
       Authorization: `Bearer ${token}`,
     };
     try {

@@ -1,4 +1,4 @@
-package com.adsapp
+package com.eranu
 
 import android.app.Application
 import com.facebook.react.PackageList

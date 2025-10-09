@@ -16,51 +16,52 @@ import {COLOR} from '../../Constants/Colors';
 import {windowHeight, windowWidth} from '../../Constants/Dimensions';
 import CustomButton from '../../Components/CustomButton';
 import FONT from '../../Constants/Font';
-import { useApi } from '../../Backend/Api';
-import { api_routes } from '../../Constants/ApiRoute';
-import { AuthContext } from '../../Backend/AuthContent';
-import { useToast } from '../../Constants/ToastContext';
+import {useApi} from '../../Backend/Api';
+import {api_routes} from '../../Constants/ApiRoute';
+import {AuthContext} from '../../Backend/AuthContent';
+import {useToast} from '../../Constants/ToastContext';
 
 const Login = ({navigation}) => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { postRequest } = useApi();
-  const { showToast } = useToast();
-  const [loading, setLoading] = useState(false)
+  const {postRequest} = useApi();
+  const {showToast} = useToast();
+  const [loading, setLoading] = useState(false);
   const auth = useContext(AuthContext);
   const {setUser, setToken} = auth;
 
-  const login=async()=>{
+  const login = async () => {
     try {
-      if(!email){
+      if (!email) {
         showToast('Email is required');
         return;
       }
-      if(!password){
-        showToast('Password is requied','error');
+      if (!password) {
+        showToast('Password is requied', 'error');
         return;
       }
       const body = {
         email: email,
-        password: password
+        password: password,
+      };
+      console.log(body, 'BODYYYY');
+
+      setLoading(true);
+      const response = await postRequest(api_routes.login, body);
+      if (!response.success) throw response;
+      setToken(response?.data?.response?.token);
+      if (response?.data?.response?.user?.isRegistered === 1) {
+        setUser(response?.data?.response?.user);
+      } else {
+        navigation.navigate('CreateProfile', {email: email});
       }
-      setLoading(true)
-      const response = await postRequest(api_routes.login,body);
-      if(!response.success)
-        throw response;
-      setToken(response?.data?.response?.token)
-      if(response?.data?.response?.user?.isRegistered === 1){
-        setUser(response?.data?.response?.user) 
-      }else{
-        navigation.navigate('CreateProfile',{email:email})
-      }
-      setLoading(false)
+      setLoading(false);
     } catch (error) {
-      setLoading(false)
-      showToast(error.error,'error');
+      setLoading(false);
+      showToast(error.error, 'error');
     }
-  }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -151,7 +152,7 @@ const Login = ({navigation}) => {
             <Text style={styles.createAccountText}>
               Don't have an account?{' '}
             </Text>
-            <TouchableOpacity onPress={()=>navigation.navigate('SignUp')}>
+            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
               <Text style={styles.createAccountLink}>Create Account</Text>
             </TouchableOpacity>
           </View>

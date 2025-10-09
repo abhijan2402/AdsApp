@@ -12,6 +12,7 @@ import Vehicle from '../Screens/Private/Account/Vehicle';
 import RequestList from '../Screens/Private/Dashboard/RequestList';
 import TransactionHistory from '../Screens/Private/Account/TransactionHistory';
 import DailyEarning from '../Screens/Private/Account/DailyEarning';
+import AdminRequestMenu from '../Screens/Private/Dashboard/AdminRequestMenu';
 const Stack = createNativeStackNavigator();
 
 const RootNavigation = () => {
@@ -34,7 +35,7 @@ const RootNavigation = () => {
                 <Stack.Screen name="RequestList" component={RequestList} />
                 <Stack.Screen name="TransactionHistory" component={TransactionHistory} />
                 <Stack.Screen name="DailyEarning" component={DailyEarning} />
-
+                <Stack.Screen name="AdminRequestMenu" component={AdminRequestMenu} />
 
 
             </Stack.Navigator>

@@ -17,7 +17,7 @@ const BottomNavigation = () => {
 
   const icons = {
     Home: 'https://cdn-icons-png.flaticon.com/128/1946/1946488.png',
-    Ads: 'https://cdn-icons-png.flaticon.com/128/7253/7253092.png',
+    Earn: 'https://cdn-icons-png.flaticon.com/128/7253/7253092.png',
     BookingHistory: 'https://cdn-icons-png.flaticon.com/128/839/839860.png',
     Profile: 'https://cdn-icons-png.flaticon.com/128/456/456283.png',
   };
@@ -81,7 +81,7 @@ const BottomNavigation = () => {
         },
       })}>
       <Tab.Screen name={'Home'} component={Home} />
-      <Tab.Screen name={'Ads'} component={Ads} />
+      <Tab.Screen name={'Earn'} component={Ads} />
       {/* <Tab.Screen name={'BookingHistory'} component={ReceivedBooking} /> */}
       <Tab.Screen name={'Profile'} component={Profile} />
     </Tab.Navigator>

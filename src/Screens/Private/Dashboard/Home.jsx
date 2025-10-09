@@ -13,68 +13,89 @@ import Header from '../../../Components/FeedHeader';
 import FONT from '../../../Constants/Font';
 import {COLOR} from '../../../Constants/Colors';
 import {windowWidth} from '../../../Constants/Dimensions';
-import { AuthContext } from '../../../Backend/AuthContent';
-import { useApi } from '../../../Backend/Api';
-import { api_routes } from '../../../Constants/ApiRoute';
-import { useToast } from '../../../Constants/ToastContext';
+import {AuthContext} from '../../../Backend/AuthContent';
+import {useApi} from '../../../Backend/Api';
+import {api_routes} from '../../../Constants/ApiRoute';
+import {useToast} from '../../../Constants/ToastContext';
 
 // ✅ Import Google Ads
 import {BannerAd, BannerAdSize, TestIds} from 'react-native-google-mobile-ads';
+import CustomButton from '../../../Components/CustomButton';
 
-const Home = () => {
+const Home = ({navigation}) => {
   const [totalPoints] = useState(3250);
   const [conversionRate] = useState(0.1); // 1 point = 0.10 INR
-  const { getRequest, putRequest } = useApi();
+  const {getRequest, putRequest} = useApi();
 
   const [tasks, setTasks] = useState([
-    {id: 1, title: 'Visit daily to earn 40 points', points: 40, claimed: false, keyName:'visitedDate',matchName: 'visitedToday'},
-    {id: 2, title: 'Watch 1 Ad to earn 20 points', points: 20, claimed: false, keyName:'dailyAdClaimedDate', matchName:'adClaimedToday'},
-    {id: 3,title: 'Refer a friend to earn 100 points',points: 100,claimed: false,keyName:null, matchName:null},
+    {
+      id: 1,
+      title: 'Visit daily to earn 40 points',
+      points: 40,
+      claimed: false,
+      keyName: 'visitedDate',
+      matchName: 'visitedToday',
+    },
+    {
+      id: 2,
+      title: 'Watch 1 Ad to earn 20 points',
+      points: 20,
+      claimed: false,
+      keyName: 'dailyAdClaimedDate',
+      matchName: 'adClaimedToday',
+    },
+    {
+      id: 3,
+      title: 'Refer a friend to earn 100 points',
+      points: 100,
+      claimed: false,
+      keyName: null,
+      matchName: null,
+    },
   ]);
 
   const auth = useContext(AuthContext);
   const {user} = auth;
-  const [lastTransaction,setLastTransaction]=  useState([]);
-  const { showToast } = useToast();
-  const [loading, setLoading] = useState(false)
+  const [lastTransaction, setLastTransaction] = useState([]);
+  const {showToast} = useToast();
+  const [loading, setLoading] = useState(false);
 
-  useEffect(()=>{
+  console.log(user, 'USERRRR');
+  useEffect(() => {
     getDashboardData();
     getHomeData();
-  },[])
+  }, []);
 
-  const getHomeData=async()=>{
+  const getHomeData = async () => {
     try {
       const response = await getRequest(api_routes.user_analytics);
-      if(!response.success)
-        throw response;
-      setLastTransaction(response?.data?.response?.latestTransactions)
+      if (!response.success) throw response;
+      setLastTransaction(response?.data?.response?.latestTransactions);
     } catch (error) {
-      showToast(error.error,'error');
+      showToast(error.error, 'error');
     }
-  }
+  };
 
-  const getDashboardData=async()=>{
+  const getDashboardData = async () => {
     try {
       const response = await getRequest(api_routes.get_dashboard_data);
-      if(!response.success)
-        throw response;
-        const dashboardData = response?.data?.response?.dashboard;
-         const updatedTasks = tasks.map(task => {
-          if (task.matchName && dashboardData.hasOwnProperty(task.matchName)) {
-            return { ...task, claimed: dashboardData[task.matchName] };
-          }
-          return task;
-        });
+      if (!response.success) throw response;
+      const dashboardData = response?.data?.response?.dashboard;
+      const updatedTasks = tasks.map(task => {
+        if (task.matchName && dashboardData.hasOwnProperty(task.matchName)) {
+          return {...task, claimed: dashboardData[task.matchName]};
+        }
+        return task;
+      });
       setTasks(updatedTasks);
     } catch (error) {
-      showToast(error.error,'error');
+      showToast(error.error, 'error');
     }
-  }
+  };
 
   const totalMoney = (totalPoints * conversionRate).toFixed(2);
 
-  const handleClaim = async (taskId) => {
+  const handleClaim = async taskId => {
     const task = tasks.find(t => t.id === taskId);
     if (!task || !task.keyName) {
       console.log('No keyName for this task or task not found');
@@ -86,54 +107,66 @@ const Home = () => {
       points: task.points,
     };
     Alert.alert(
-    'Confirm Claim',
-    `Do you want to claim and earn ${task.points} points?`,
-    [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Yes',
-        onPress: async () => {
-          setLoading(true)
-           try {
-              const response = await putRequest(api_routes.update_dashboard_data, data);
+      'Confirm Claim',
+      `Do you want to claim and earn ${task.points} points?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const response = await putRequest(
+                api_routes.update_dashboard_data,
+                data,
+              );
               if (!response.success) throw response;
               await getDashboardData();
               showToast(`You earned ${task.points} points!`, 'success');
-              setLoading(false)
+              setLoading(false);
             } catch (error) {
               console.log(error);
-              setLoading(false)
+              setLoading(false);
               showToast(error.error || 'Failed to claim task', 'error');
             }
+          },
         },
-      },
-    ],
-    { cancelable: true }
-  );
-    
+      ],
+      {cancelable: true},
+    );
   };
 
-  if(loading){
+  if (loading) {
     return (
-      <View style={{flex:1, alignItems:'center', justifyContent:'center'}}>
+      <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
         <ActivityIndicator size={30} color={'black'} />
       </View>
-    )
+    );
   }
 
   // ✅ Use Test Banner ID for development
   const bannerAdUnitId = __DEV__
     ? TestIds.BANNER
-    : 'ca-app-pub-3056425951476582/1234567890';
+    : 'ca-app-pub-3056425951476582~1460645342';
 
   return (
     <View style={styles.safeArea}>
       <Header title={'Home'} />
 
       <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.adContainer}>
+          <BannerAd
+            unitId={bannerAdUnitId}
+            // size={BannerAdSize.FULL_BANNER}
+            size={BannerAdSize.MEDIUM_RECTANGLE}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: true,
+            }}
+          />
+        </View>
         {/* ---------- Banner Card ---------- */}
         <View style={styles.bannerCard}>
           <Image
@@ -150,7 +183,15 @@ const Home = () => {
             </Text>
           </View>
         </View>
-
+        {user?.email == 'admin_ashishjat@gmail.com' && (
+          <CustomButton
+            title={'See Request'}
+            style={{marginVertical: 15}}
+            onPress={() => {
+              navigation.navigate('AdminRequestMenu');
+            }}
+          />
+        )}
         {/* ---------- User Info ---------- */}
         <View style={styles.userInfoSection}>
           <Text style={styles.welcomeText}>Welcome, </Text>
@@ -186,32 +227,31 @@ const Home = () => {
         </View>
 
         {/* ---------- Withdraw History ---------- */}
-        {
-          lastTransaction?.length > 0 &&
+        {lastTransaction?.length > 0 && (
           <View style={styles.historySection}>
             <Text style={styles.historyTitle}>Last 5 Withdrawals</Text>
-            {
-              lastTransaction.map(item => (
+            {lastTransaction.map(item => (
               <View key={item.id} style={styles.historyRow}>
-                <Text style={styles.historyDate}>{new Date(item.createdAt).toDateString()}</Text>
+                <Text style={styles.historyDate}>
+                  {new Date(item.createdAt).toDateString()}
+                </Text>
                 <Text style={styles.historyAmount}>₹{item.amountRedeemed}</Text>
               </View>
             ))}
           </View>
-        }
+        )}
+        {/* ---------- Google Banner Ad ---------- */}
+        <View style={styles.adContainer}>
+          <BannerAd
+            unitId={bannerAdUnitId}
+            // size={BannerAdSize.FULL_BANNER}
+            size={BannerAdSize.LARGE_BANNER}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: true,
+            }}
+          />
+        </View>
       </ScrollView>
-
-      {/* ---------- Google Banner Ad ---------- */}
-      <View style={styles.adContainer}>
-        <BannerAd
-          unitId={bannerAdUnitId}
-          // size={BannerAdSize.FULL_BANNER}
-          size={BannerAdSize.LARGE_BANNER}
-          requestOptions={{
-            requestNonPersonalizedAdsOnly: true,
-          }}
-        />
-      </View>
     </View>
   );
 };
@@ -240,6 +280,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
+    marginTop: 10,
   },
   bannerImage: {
     width: 70,

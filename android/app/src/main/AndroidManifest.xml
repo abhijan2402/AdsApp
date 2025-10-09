@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.adsapp">  <!-- ✅ Make sure this matches applicationId in build.gradle -->
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.eranu">  <!-- ✅ Make sure this matches applicationId in build.gradle -->
 
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -11,8 +12,8 @@
         android:allowBackup="false"
         android:theme="@style/AppTheme"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true"
-        xmlns:tools="http://schemas.android.com/tools">  <!-- ✅ Added this -->
+         android:networkSecurityConfig="@xml/network_security_config"
+        >
 
         <!-- ✅ AdMob App ID (Overriding the library’s empty value) -->
         <meta-data
@@ -27,6 +28,7 @@
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize"
             android:exported="true">
+            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
