@@ -30,30 +30,96 @@ const Ads = () => {
   const rewards = [50, 100, 150, 200, 250];
   const segmentAngle = 360 / rewards.length;
 
-  // ✅ Use Rewarded Ad instead of Interstitial
-  const adUnitId = __DEV__
+  // Safe __DEV__ check (prevents "Dev does not exist" error)
+  const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : false;
+
+  // Ad unit id
+  const adUnitId = isDev
     ? TestIds.REWARDED
-    : 'ca-app-pub-3056425951476582/5056383221'; // ✅ Your real ID
+    : 'ca-app-pub-3056425951476582/5056383221'; // replace with your real id for prod
 
-  const {isLoaded, isEarnedReward, load, show, reward} = useRewardedAd(
-    adUnitId,
-    {
+  // useRewardedAd hook
+  // Note: different versions of the library may expose slightly different props.
+  // This destructuring matches the common API: isLoaded, isClosed, isEarnedReward, load, show, reward, error
+  const {isLoaded, isClosed, isEarnedReward, load, show, reward, error} =
+    useRewardedAd(adUnitId, {
       requestNonPersonalizedAdsOnly: true,
-    },
-  );
+    });
 
-  // Load ad initially
+  // Local "loading" state to show messages if needed
+  const [adLoading, setAdLoading] = useState(false);
+
+  // Load ad on mount
   useEffect(() => {
-    load();
+    (async () => {
+      try {
+        setAdLoading(true);
+        await load();
+      } catch (e) {
+        // load() might not throw depending on library version; handle defensively
+        console.log('Initial ad load failed:', e);
+      } finally {
+        setAdLoading(false);
+      }
+    })();
   }, [load]);
 
-  // ✅ When user earns reward
+  // Reload when ad is closed (prepare next)
+  useEffect(() => {
+    if (isClosed) {
+      console.log('Ad closed → reloading...');
+      // small delay to avoid quick reload races
+      setTimeout(() => {
+        try {
+          load();
+        } catch (e) {
+          console.log('Reload after close failed:', e);
+        }
+      }, 500);
+    }
+  }, [isClosed, load]);
+
+  // When user earns reward — call backend
   useEffect(() => {
     if (isEarnedReward && reward) {
-      console.log('Reward Earned:', reward);
+      console.log('Reward Earned event:', reward);
+      // reward object may contain amount or type depending on setup
       CallReward(earnedPoints);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEarnedReward, reward]);
+
+  // Retry on ad error
+  useEffect(() => {
+    if (error) {
+      console.log('Ad error:', error);
+      // show a soft message to user and attempt reload
+      showToast('Ad failed to load, retrying...', 'info');
+      // try reload after short delay
+      setTimeout(() => {
+        try {
+          load();
+        } catch (e) {
+          console.log('Retry load failed:', e);
+        }
+      }, 1500);
+    }
+  }, [error, load, showToast]);
+
+  // Fallback periodic reload if ad stays unloaded
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (!isLoaded) {
+        console.log('Periodic reload attempt for rewarded ad...');
+        try {
+          load();
+        } catch (e) {
+          console.log('Periodic load error:', e);
+        }
+      }
+    }, 15000); // every 15s
+    return () => clearInterval(id);
+  }, [isLoaded, load]);
 
   // Reward API call
   const CallReward = async points => {
@@ -66,11 +132,13 @@ const Ads = () => {
       const response = await postRequest(api_routes.add_new_earning, body);
       console.log(response, 'Reward Response');
       showToast(`You earned ${points} points!`, 'success');
-    } catch (error) {
-      showToast(error.error || 'Error while rewarding', 'error');
+    } catch (err) {
+      console.log('CallReward error:', err);
+      showToast(err?.error || 'Error while rewarding', 'error');
     }
   };
 
+  // Spin logic
   const spinArrow = () => {
     if (spinning) return;
     setSpinning(true);
@@ -92,11 +160,55 @@ const Ads = () => {
       setEarnedPoints(points);
       setShowRewardModal(true);
 
-      // Show rewarded ad after animation delay
-      setTimeout(() => {
-        if (isLoaded) show();
-        else showToast('Ad not ready yet, try again!', 'info');
-      }, 3500);
+      // Show rewarded ad after short delay
+      setTimeout(async () => {
+        try {
+          if (isLoaded) {
+            // Some library versions require show() to be awaited or handled as promise
+            try {
+              await show();
+            } catch (e) {
+              console.log('show() threw:', e);
+              showToast('Could not show ad. Reloading...', 'info');
+              load();
+            }
+          } else {
+            // If ad not loaded, trigger a reload + try once more
+            showToast('Ad loading — please wait a moment...', 'info');
+            try {
+              await load();
+            } catch (e) {
+              console.log('load during fallback failed:', e);
+            }
+
+            // try show after small wait
+            setTimeout(async () => {
+              if (isLoaded) {
+                try {
+                  await show();
+                } catch (e) {
+                  console.log('second show() attempt failed:', e);
+                  showToast(
+                    'Ad not available right now, try again later.',
+                    'error',
+                  );
+                }
+              } else {
+                showToast(
+                  'Ad still not ready, please try again later.',
+                  'error',
+                );
+              }
+            }, 1500);
+          }
+        } catch (e) {
+          console.log('Ad show / fallback error:', e);
+          showToast(
+            'Something went wrong with the ad. Try again later.',
+            'error',
+          );
+        }
+      }, 3000);
     });
   };
 
@@ -153,6 +265,17 @@ const Ads = () => {
             {spinning ? 'Spinning...' : 'Spin Now'}
           </Text>
         </TouchableOpacity>
+
+        {/* Small ad status hint */}
+        <View style={{marginTop: 12}}>
+          <Text style={{fontFamily: FONT.SemiBold, color: '#444'}}>
+            {isLoaded
+              ? 'Ad ready'
+              : adLoading
+              ? 'Loading ad...'
+              : 'Ad not loaded'}
+          </Text>
+        </View>
       </View>
 
       {/* Reward Modal */}

@@ -45,8 +45,6 @@ const Login = ({navigation}) => {
         email: email,
         password: password,
       };
-      console.log(body, 'BODYYYY');
-
       setLoading(true);
       const response = await postRequest(api_routes.login, body);
       if (!response.success) throw response;
@@ -83,7 +81,7 @@ const Login = ({navigation}) => {
           />
 
           {/* Title */}
-          <Text style={styles.title}>Welcome to AdRewards</Text>
+          <Text style={styles.title}>Welcome to Eranu</Text>
           <Text style={styles.subtitle}>
             Earn rewards by simply watching ads!
           </Text>
